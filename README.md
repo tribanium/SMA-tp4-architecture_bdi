@@ -1,0 +1,1 @@
+# SMA-architecture_bdi
