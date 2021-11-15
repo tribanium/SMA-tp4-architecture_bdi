@@ -9,10 +9,6 @@ class Basecamp(pygame.sprite.Sprite):
         super().__init__()
         self.x = x
         self.y = y
+        self.pos = np.array([x, y], dtype=np.float64)
         self.size = size
         self.color = color
-
-    def draw(self, screen):
-        pygame.draw.rect(
-            screen, self.color, pygame.Rect(self.x, self.y, self.size, self.size)
-        )
