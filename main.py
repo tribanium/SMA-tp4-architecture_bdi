@@ -2,84 +2,20 @@ import pygame
 import sys
 import numpy as np
 import time
+import threading
 
-# BACKGROUND_COLOR = (12, 24, 36)
+from basecamp import Basecamp
+from robots import Robot
+from rocks import Rocks
+
 BACKGROUND_COLOR = (234, 213, 178)
 ROBOT_COLOR = (250, 120, 60)
 WHITE_COLOR = (255, 255, 255)
 BLACK_COLOR = (0, 0, 0)
-GREEN_COLOR = (0, 255, 0)
+GREEN_COLOR = (72, 155, 83)
 
 WIDTH = 1000
 HEIGHT = 600
-
-
-class Robot(pygame.sprite.Sprite):
-    def __init__(
-        self, x, y, width, height, color=ROBOT_COLOR, size=10, velocity=[0, 0]
-    ):
-        super().__init__()
-        self.image = pygame.Surface([size, size])
-        self.image.fill(BACKGROUND_COLOR)
-        pygame.draw.rect(self.image, color, pygame.Rect(0, 0, size, size))
-
-        self.rect = self.image.get_rect()
-        self.pos = np.array([x, y], dtype=np.float64)
-        self.vel = np.asarray(velocity, dtype=np.float64)
-
-        self.width = width
-        self.height = height
-
-    def update(self):
-        self.pos += self.vel
-        x, y = self.pos
-
-        # Conditions limites
-        if (x < 0) or (x > self.width):
-            self.vel[0] = -self.vel[0]
-
-        if (y < 0) or (y > self.height):
-            self.vel[1] = -self.vel[1]
-
-        # Update de la position du rectangle
-        self.rect.x = x
-        self.rect.y = y
-
-
-class Basecamp(pygame.sprite.Sprite):
-    def __init__(self, x, y, size=40, color=GREEN_COLOR):
-        super().__init__()
-        self.x = x
-        self.y = y
-        self.size = size
-        self.color = color
-
-    def draw(self, screen):
-        pygame.draw.rect(
-            screen, self.color, pygame.Rect(self.x, self.y, self.size, self.size)
-        )
-
-
-class Rocks(pygame.sprite.Sprite):
-    def __init__(self, x, y, color, velocity, radius=5):
-        super().__init__()
-        self.x = x
-        self.y = y
-        self.pos = np.array([x, y], dtype=np.float64)
-        self.vel = np.asarray(velocity, dtype=np.float64)
-
-        self.image = pygame.Surface((radius * 2, radius * 2))
-        self.image.fill(BACKGROUND_COLOR)
-        pygame.draw.circle(self.image, color, (radius, radius), radius)
-
-        self.rect = self.image.get_rect()
-
-    def update(self):
-        self.pos += self.vel
-        x, y = self.pos
-
-        self.rect.x = x
-        self.rect.y = y
 
 
 class Simulation:
@@ -117,8 +53,7 @@ class Simulation:
                 - (i // 10 * 10 * 2 * self.robot_size)
             )
             y = (i // 10) * 2 * self.robot_size + base.y + 50
-            vel = np.random.rand(2) * 4 - 2
-            # vel = np.zeros(2)
+            vel = np.random.rand(2) * 2 - 1
             robot = Robot(
                 x,
                 y,
@@ -130,11 +65,14 @@ class Simulation:
             )
             container.add(robot)
 
+        # initialisation des gisements de pierres
         for i in range(self.nb_rocks):
             x = np.random.randint(0, self.width)
             y = np.random.randint(0, self.height)
             vel = np.zeros(2)
-            rock = Rocks(x, y, color=BLACK_COLOR, velocity=vel)
+            rock = Rocks(
+                x, y, color=BLACK_COLOR, velocity=vel, radius=np.random.randint(5, 20)
+            )
             container_rocks.add(rock)
 
         # Lancement de la simulation pour T itérations
@@ -148,8 +86,8 @@ class Simulation:
             self.screen.fill(BACKGROUND_COLOR)
 
             base.draw(self.screen)
-            container.draw(self.screen)
             container_rocks.draw(self.screen)
+            container.draw(self.screen)
 
             pygame.display.flip()
             clock.tick(30)
