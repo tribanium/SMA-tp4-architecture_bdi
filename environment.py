@@ -64,7 +64,7 @@ class Environment:
         rocks_nearby = []
         robot_pos = robot.pos
         for rock in self.rocks_list:
-            rock_pos = rock.pos
+            rock_pos = rock.pos + rock.radius - robot.size / 2
             distance = sqrt(sum((robot_pos - rock_pos) ** 2))
             if distance < robot.vision_field:
                 heading = atan2(rock_pos[1] - robot_pos[1], rock_pos[0] - robot_pos[0])
@@ -94,3 +94,17 @@ class Environment:
     def delete_rocks(self, rock):
         self.rocks_list.remove(rock)
         self.simu.container_rocks.remove(rock)
+
+    def get_nearest_rock(self, robot):
+        # Get the rock near the robot
+        distance_min = None
+        nearest_rock = None
+        for rock in self.rocks_list:
+            distance = sqrt(sum((robot.pos - rock.pos) ** 2))
+            if not distance_min:
+                distance_min = distance
+            elif distance < distance_min:
+                distance_min = distance
+                nearest_rock = rock
+
+        return nearest_rock

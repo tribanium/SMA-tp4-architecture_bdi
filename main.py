@@ -1,8 +1,6 @@
 import pygame
 import sys
 import numpy as np
-import time
-import threading
 import logging
 
 from basecamp import Basecamp
@@ -25,7 +23,7 @@ HEIGHT = 600
 
 class Simulation:
     def __init__(self, width, height, nb_robots=20, nb_rocks=10):
-        self.T = 1000
+        self.T = 10000
         self.width = width
         self.height = height
         self.robot_size = 10
@@ -91,5 +89,6 @@ class Simulation:
 
 
 if __name__ == "__main__":
-    simu = Simulation(WIDTH, HEIGHT, 30, 10)
+    # Scales up to about 100 agents
+    simu = Simulation(WIDTH, HEIGHT, 100, 10)
     simu.start()

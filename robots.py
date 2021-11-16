@@ -3,11 +3,13 @@ import numpy as np
 import threading
 import time
 import logging
+from math import sqrt
 
 logger = logging.getLogger(__name__)
 
 BACKGROUND_COLOR = (234, 213, 178)
 ROBOT_COLOR = (250, 120, 60)
+ROBOT_COLOR_CARRY = (0, 0, 255)
 
 
 ACTIONS = ["GO TO THE ROCK", "PICK ROCK"]
@@ -25,10 +27,11 @@ class Robot(pygame.sprite.Sprite):
 
         self.env = env
 
+        self.color = ROBOT_COLOR
         self.image = pygame.Surface([self.size, self.size])
         self.image.fill(BACKGROUND_COLOR)
         pygame.draw.rect(
-            self.image, ROBOT_COLOR, pygame.Rect(0, 0, self.size, self.size)
+            self.image, self.color, pygame.Rect(0, 0, self.size, self.size)
         )
         self.rect = self.image.get_rect()
         self.pos = np.array([x, y], dtype=np.float64)
@@ -38,6 +41,19 @@ class Robot(pygame.sprite.Sprite):
         self.height = height
 
         self.thread = threading.Thread(target=self.loop)
+        self.lock = threading.Lock()
+
+    def mine_rock(self, rock):
+        self.lock.acquire()
+        if rock is not None:
+            rock.radius -= 1
+            self.is_carrying = True
+            self.color = ROBOT_COLOR_CARRY
+        self.lock.release()
+
+    def release_rock(self):
+        self.is_carrying = False
+        self.color = ROBOT_COLOR
 
     def perception(self):
         return_to_base = self.env.send_return_to_base(self)  # dict
@@ -47,15 +63,30 @@ class Robot(pygame.sprite.Sprite):
         return return_to_base, rocks_nearby, robots_nearby
 
     def option(self):
-        epsilon = 5
+        epsilon = sqrt(2) / 2
         return_to_base, rocks_nearby, robots_nearby = self.perception()
 
         ### Battery
 
+        ### Return to base
+        if self.is_carrying:
+            option = "RETURN TO BASE"
+            heading = return_to_base["heading"]
+            distance_to_base = return_to_base["distance"]
+            if distance_to_base < epsilon:
+                option = "DROP TO BASE"
+                heading = None
+
+            # option, heading = (
+            #     ("DROP TO BASE", None)
+            #     if return_to_base["distance"] < epsilon
+            #     else ("RETURN TO BASE", return_to_base["heading"])
+            # )
+
         ### Is there any rock nearby ? If yes, chooses the closest
-        heading = None
-        option = None
-        if rocks_nearby:
+        elif rocks_nearby:
+            heading = None
+            option = None
             c = 0
             for i, rock in enumerate(rocks_nearby):
                 if rock["distance"] < rocks_nearby[c]["distance"]:
@@ -67,6 +98,9 @@ class Robot(pygame.sprite.Sprite):
             else:
                 option = "GO TO ROCK"
 
+        else:
+            option, heading = "SEARCH ROCK", None
+
         return option, heading
 
     # def action(self):
@@ -77,15 +111,30 @@ class Robot(pygame.sprite.Sprite):
     def update(self):
         option, heading = self.option()
 
-        if option == "PICK ROCK":
-            self.vel[0], self.vel[1] = 0, 0
-        elif option == "GO TO ROCK":
+        if option == "RETURN TO BASE":
             u = np.asarray([np.cos(heading), np.sin(heading)], dtype=np.float64)
-            self.vel = u * np.linalg.norm(self.vel)
+            self.vel = u * sqrt(2)
 
-        # if rock_pos is not None:
-        #     u = rock_pos - self.pos
-        #     self.vel = u * np.linalg.norm(self.vel) / np.linalg.norm(u)
+        elif option == "DROP TO BASE":
+            self.vel[0], self.vel[1] = 0, 0
+            self.release_rock()
+            time.sleep(1)
+
+        elif option == "SEARCH ROCK":
+            if not self.vel.any():
+                self.vel = np.random.rand(2) * 2 - 1
+
+        elif option == "GO TO ROCK":
+            # Change vel orientation
+            u = np.asarray([np.cos(heading), np.sin(heading)], dtype=np.float64)
+            self.vel = u * sqrt(2)
+
+        elif option == "PICK ROCK":
+            self.vel[0], self.vel[1] = 0, 0
+            rock = self.env.get_nearest_rock(self)
+            self.mine_rock(rock)
+            time.sleep(1)
+
         self.pos += self.vel
         x, y = self.pos
 
@@ -99,6 +148,13 @@ class Robot(pygame.sprite.Sprite):
         # Update de la position du rectangle
         self.rect.x = x
         self.rect.y = y
+
+        self.change_color()
+
+    def change_color(self):
+        pygame.draw.rect(
+            self.image, self.color, pygame.Rect(0, 0, self.size, self.size)
+        )
 
     def loop(self):
         t = threading.currentThread()

@@ -29,11 +29,11 @@ class Rocks(pygame.sprite.Sprite):
 
         # self.radius -= 0.05
 
-        # if self.radius > 0:
-        #     self.image = pygame.Surface((self.radius * 2, self.radius * 2))
-        #     self.image.fill(BACKGROUND_COLOR)
-        #     pygame.draw.circle(
-        #         self.image, self.color, (self.radius, self.radius), self.radius
-        #     )
-        # else:
-        #     self.env.delete_rocks(self)
+        if self.radius > 0:
+            self.image = pygame.Surface((self.radius * 2, self.radius * 2))
+            self.image.fill(BACKGROUND_COLOR)
+            pygame.draw.circle(
+                self.image, self.color, (self.radius, self.radius), self.radius
+            )
+        else:
+            self.env.delete_rocks(self)
