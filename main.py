@@ -8,9 +8,10 @@ from robots import Robot
 from rocks import Rocks
 from environment import Environment
 
-logging.basicConfig(
-    filename="logs.log", filemode="w", encoding="utf-8", level=logging.DEBUG
-)
+# logging.basicConfig(
+#     filename="logs.log", filemode="w", encoding="utf-8", level=logging.DEBUG
+# )
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BACKGROUND_COLOR = (234, 213, 178)
