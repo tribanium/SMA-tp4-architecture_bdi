@@ -1,12 +1,15 @@
-from robots import Robot
+from robots import Robot, MAX_VEL_NORM
 from basecamp import Basecamp
 from rocks import Rocks
+import logging
 
 from math import atan2, sqrt
 import numpy as np
 
 ROBOT_COLOR = (250, 120, 60)
 BLACK_COLOR = (0, 0, 0)
+
+logger = logging.getLogger(__name__)
 
 
 class Environment:
@@ -32,16 +35,7 @@ class Environment:
                 - (i // 10 * 10 * 2 * self.robot_size)
             )
             y = (i // 10) * 2 * self.robot_size + self.base.y + 50
-            vel = np.random.rand(2) * 2 - 1
-            robot = Robot(
-                self,
-                i,
-                x,
-                y,
-                self.width,
-                self.height,
-                velocity=vel,
-            )
+            robot = Robot(self, i, x, y, self.width, self.height)
             self.robots_list.append(robot)
 
         # initialisation des cailloux
@@ -55,7 +49,6 @@ class Environment:
                 x,
                 y,
                 color=BLACK_COLOR,
-                velocity=vel,
                 radius=np.random.randint(5, 20),
             )
             self.rocks_list.append(rock)
@@ -92,8 +85,8 @@ class Environment:
         return robots_nearby
 
     def delete_rocks(self, rock):
-        self.rocks_list.remove(rock)
         self.simu.container_rocks.remove(rock)
+        self.rocks_list.remove(rock)
 
     def get_nearest_rock(self, robot):
         # Get the rock near the robot
@@ -103,6 +96,7 @@ class Environment:
             distance = sqrt(sum((robot.pos - rock.pos) ** 2))
             if not distance_min:
                 distance_min = distance
+                nearest_rock = rock
             elif distance < distance_min:
                 distance_min = distance
                 nearest_rock = rock

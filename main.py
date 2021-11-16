@@ -8,7 +8,9 @@ from robots import Robot
 from rocks import Rocks
 from environment import Environment
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    filename="logs.log", filemode="w", encoding="utf-8", level=logging.DEBUG
+)
 logger = logging.getLogger(__name__)
 
 BACKGROUND_COLOR = (234, 213, 178)
@@ -29,7 +31,9 @@ class Simulation:
         self.robot_size = 10
         self.nb_robots = nb_robots
         self.nb_rocks = nb_rocks
-        self.env = Environment(self, nb_robots, nb_rocks, width, height)
+        self.env = Environment(
+            self, self.nb_robots, self.nb_rocks, self.width, self.height
+        )
 
     def stop_all_threads(self):
         for robot in self.container:
@@ -90,5 +94,5 @@ class Simulation:
 
 if __name__ == "__main__":
     # Scales up to about 100 agents
-    simu = Simulation(WIDTH, HEIGHT, 100, 10)
+    simu = Simulation(WIDTH, HEIGHT, 20, 10)
     simu.start()
