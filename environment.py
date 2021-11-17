@@ -1,3 +1,4 @@
+from numpy.core.fromnumeric import size
 from robots import Robot, MAX_VEL_NORM
 from basecamp import Basecamp
 from rocks import Rocks
@@ -23,7 +24,24 @@ class Environment:
 
         self.robots_list = []
         self.rocks_list = []
-        self.base = Basecamp(self.width // 2, self.height // 2)
+
+        # initialisation des cailloux
+        self.init_rocks_and_base()
+        # min_radius = 5
+        # max_radius = 20
+        # for i in range(self.nb_rocks):
+        # x = np.random.randint(0, self.width)
+        # y = np.random.randint(0, self.height)
+        # rock = Rocks(
+        #     self,
+        #     x,
+        #     y,
+        #     color=BLACK_COLOR,
+        #     radius=np.random.randint(min_radius, max_radius),
+        # )
+        # rock = self.create_rock_no_overlap()
+        # if rock is not None:
+        #     self.rocks_list.append(rock)
 
         # initialisation des robots:
         for i in range(self.nb_robots):
@@ -38,20 +56,77 @@ class Environment:
             robot = Robot(self, i, x, y, self.width, self.height)
             self.robots_list.append(robot)
 
-        # initialisation des cailloux
-        for i in range(self.nb_rocks):
-            x = np.random.randint(0, self.width)
-            y = np.random.randint(0, self.height)
-            # x, y = 100, 100
-            vel = np.zeros(2)
+    def init_rocks_and_base(self):
+        min_radius = 5
+        max_radius = 20
+        factor = 5
+        columns = self.width // (factor * max_radius)
+        rows = self.height // (factor * max_radius)
+        cells = np.array(
+            [
+                (i * factor * max_radius, j * factor * max_radius)
+                for i in range(columns)
+                for j in range(rows)
+            ]
+        )
+        self.nb_rocks = columns * rows // 2
+        areas = cells[np.random.choice(len(cells), replace=False, size=self.nb_rocks)]
+        x_base, y_base = areas[0]
+        self.base = Basecamp(x_base, y_base)
+        for pos in areas[1:]:
+            x, y = pos[0], pos[1]
             rock = Rocks(
                 self,
                 x,
                 y,
                 color=BLACK_COLOR,
-                radius=np.random.randint(5, 20),
+                radius=np.random.randint(min_radius, max_radius),
             )
             self.rocks_list.append(rock)
+
+        # def create_rock_no_overlap(self):
+        #     min_radius = 5
+        #     max_radius = 20
+        #     x = np.random.randint(0, self.width)
+        #     y = np.random.randint(0, self.height)
+        #     radius = np.random.randint(min_radius, max_radius)
+        #     if not self.rocks_list:
+        #         new_rock = Rocks(self, x, y, color=BLACK_COLOR, radius=radius)
+        #         return new_rock
+        #     i = 0
+        #     new_rock = None
+        #     while i < len(self.rocks_list):
+        #         print(i)
+        #         rock = self.rocks_list[i]
+        #         rxc, ryc = rock.x + rock.radius, rock.y + rock.radius
+        #         rxb, ryb = (
+        #             self.base.x + self.base.size / 2,
+        #             self.base.y + self.base.size / 2,
+        #         )
+        #         no_overlap_x = abs(rxc - (x + radius)) > sqrt(2) * abs(radius + rock.radius)
+        #         no_overlap_y = abs(ryc - (y + radius)) > sqrt(2) * abs(radius + rock.radius)
+        #         no_overlap_base_x = abs(rxb - (x + radius)) > sqrt(2) * abs(
+        #             radius - self.base.size / 2
+        #         )
+        #         no_overlap_base_y = abs(ryb - (y + radius)) > sqrt(2) * abs(
+        #             radius - self.base.size / 2
+        #         )
+        #         if (
+        #             no_overlap_x
+        #             and no_overlap_y
+        #             and no_overlap_base_x
+        #             and no_overlap_base_y
+        #         ):
+        #             i += 1
+        #         else:
+        #             x = np.random.randint(0, self.width)
+        #             y = np.random.randint(0, self.height)
+        #             radius = np.random.randint(min_radius, max_radius)
+        #             i = 0
+
+        # print(len(self.rocks_list))
+        # new_rock = Rocks(self, x, y, color=BLACK_COLOR, radius=radius)
+        # return new_rock
 
     def send_rocks_nearby(self, robot):
         rocks_nearby = []
@@ -67,8 +142,13 @@ class Environment:
     def send_return_to_base(self, robot):
         base_pos = self.base.pos
         robot_pos = robot.pos
-        distance = sqrt(sum((robot_pos - base_pos) ** 2))
-        heading = atan2(base_pos[1] - robot_pos[1], base_pos[0] - robot_pos[0])
+        rxc, ryc = (
+            robot_pos[0] + self.robot_size / 2,
+            robot_pos[1] + self.robot_size / 2,
+        )
+        bxc, byc = base_pos[0] + self.base.size / 2, base_pos[1] + self.base.size / 2
+        distance = sqrt((bxc - rxc) ** 2 + (byc - ryc) ** 2)
+        heading = atan2(byc - ryc, bxc - rxc)
         return_to_base_dict = {"distance": distance, "heading": heading}
         return return_to_base_dict
 
@@ -102,3 +182,42 @@ class Environment:
                 nearest_rock = rock
 
         return nearest_rock
+
+    # def sort_basecamp_side(self, robot_pos, base_pos):
+    #     rxc = robot_pos[0] + self.robot_size / 2
+    #     ryc = robot_pos[1] + self.robot_size / 2
+    #     bxc = base_pos[0] + self.base.size / 2
+    #     byc = base_pos[1] + self.base.size / 2
+
+    #     if (rxc <= bxc) and (byc - self.base.size < ryc < byc + self.base.size):
+    #         distance = sqrt(
+    #             ((base_pos[0] - self.robot_size) - robot_pos[0]) ** 2
+    #             + ((base_pos[1] + 15) - robot_pos[1]) ** 2
+    #         )
+    #         heading = atan2(
+    #             (base_pos[1] + 15) - robot_pos[1],
+    #             (base_pos[0] - self.robot_size) - robot_pos[0],
+    #         )
+    #     elif (bxc < rxc) and (byc - self.base.size < ryc < byc + self.base.size):
+    #         distance = sqrt(
+    #             ((base_pos[0] + self.base.size) - robot_pos[0]) ** 2
+    #             + ((base_pos[1] + 15) - robot_pos[1]) ** 2
+    #         )
+    #         heading = atan2(
+    #             (base_pos[1] + 15) - robot_pos[1],
+    #             ((base_pos[0] + self.base.size) - robot_pos[0]),
+    #         )
+    #     elif ryc < byc:
+    #         distance = sqrt(
+    #             ((base_pos[0] + 15) - (robot_pos[0] + self.robot_size)) ** 2
+    #             + (base_pos[1] - (robot_pos[1] + self.robot_size)) ** 2
+    #         )
+    #         heading = atan2(
+    #             base_pos[1] - (robot_pos[1] + self.robot_size),
+    #             (base_pos[0] + 15) - (robot_pos[0] + self.robot_size),
+    #         )
+    #     else:
+    #         distance = sqrt(sum((base_pos - robot_pos) ** 2))
+    #         heading = atan2(base_pos[1] - robot_pos[1], base_pos[0] - robot_pos[0])
+
+    #     return distance, heading

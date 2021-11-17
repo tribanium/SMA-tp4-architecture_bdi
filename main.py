@@ -3,9 +3,6 @@ import sys
 import numpy as np
 import logging
 
-from basecamp import Basecamp
-from robots import Robot
-from rocks import Rocks
 from environment import Environment
 
 # logging.basicConfig(
@@ -32,6 +29,10 @@ class Simulation:
         self.robot_size = 10
         self.nb_robots = nb_robots
         self.nb_rocks = nb_rocks
+        pygame.init()
+        self.screen = pygame.display.set_mode(
+            (WIDTH + self.robot_size, HEIGHT + self.robot_size)
+        )
         self.env = Environment(
             self, self.nb_robots, self.nb_rocks, self.width, self.height
         )
@@ -49,10 +50,7 @@ class Simulation:
         )
 
     def start(self):
-        pygame.init()
-        self.screen = pygame.display.set_mode(
-            (WIDTH + self.robot_size, HEIGHT + self.robot_size)
-        )
+
         pygame.display.set_caption("SMA Robots on Mars")
         clock = pygame.time.Clock()
 
@@ -95,5 +93,5 @@ class Simulation:
 
 if __name__ == "__main__":
     # Scales up to about 100 agents
-    simu = Simulation(WIDTH, HEIGHT, 20, 10)
+    simu = Simulation(WIDTH, HEIGHT, 50, 50)
     simu.start()

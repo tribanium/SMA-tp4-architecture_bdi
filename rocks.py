@@ -14,9 +14,9 @@ class Rocks(pygame.sprite.Sprite):
         self.color = color
         self.pos = np.array([x, y], dtype=np.float64)
 
-        self.image = pygame.Surface((self.radius * 2, self.radius * 2))
-        self.image.fill(BACKGROUND_COLOR)
+        self.image = pygame.Surface([self.radius * 2, self.radius * 2])
         pygame.draw.circle(self.image, color, (self.radius, self.radius), self.radius)
+        self.image.fill(BACKGROUND_COLOR)
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = self.pos
 
