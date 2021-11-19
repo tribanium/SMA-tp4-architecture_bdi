@@ -27,21 +27,6 @@ class Environment:
 
         # initialisation des cailloux
         self.init_rocks_and_base()
-        # min_radius = 5
-        # max_radius = 20
-        # for i in range(self.nb_rocks):
-        # x = np.random.randint(0, self.width)
-        # y = np.random.randint(0, self.height)
-        # rock = Rocks(
-        #     self,
-        #     x,
-        #     y,
-        #     color=BLACK_COLOR,
-        #     radius=np.random.randint(min_radius, max_radius),
-        # )
-        # rock = self.create_rock_no_overlap()
-        # if rock is not None:
-        #     self.rocks_list.append(rock)
 
         # initialisation des robots:
         for i in range(self.nb_robots):

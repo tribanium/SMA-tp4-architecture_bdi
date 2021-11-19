@@ -4,3 +4,5 @@
 __pycache__/
 leg/
 *.log
+.vscode/
+images/
