@@ -105,7 +105,7 @@ class Robot(pygame.sprite.Sprite):
 
         if option == "RETURN TO BASE":
             u = np.array([np.cos(heading), np.sin(heading)])
-            self.vel = u * sqrt(2)
+            self.vel = u * MAX_VEL_NORM
 
         elif option == "DROP TO BASE":
             self.vel[0], self.vel[1] = 0, 0
