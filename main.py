@@ -22,7 +22,7 @@ HEIGHT = 600
 
 
 class Simulation:
-    def __init__(self, width, height, nb_robots=20, nb_rocks=10):
+    def __init__(self, nb_robots=20, nb_rocks=10, width=1000, height=600):
         self.T = 10000
         self.width = width
         self.height = height
@@ -93,5 +93,9 @@ class Simulation:
 
 if __name__ == "__main__":
     # Scales up to about 100 agents
-    simu = Simulation(WIDTH, HEIGHT, 50, 50)
+
+    nb_agents = 20
+    nb_rocks = 10
+
+    simu = Simulation(nb_agents, nb_rocks, WIDTH, HEIGHT)
     simu.start()
