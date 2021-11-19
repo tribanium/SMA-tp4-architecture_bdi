@@ -3,16 +3,20 @@ import numpy as np
 import threading
 import time
 import logging
-from math import sqrt
+from colour import Color
+from math import sqrt, atan2
 
 logger = logging.getLogger(__name__)
+
+red = Color("red")
+robot_colors = list(red.range_to(Color("green"), 101))
 
 BACKGROUND_COLOR = (234, 213, 178)
 ROBOT_COLOR = (250, 120, 60)
 ROBOT_COLOR_CARRY = (0, 0, 255)
+BLACK_COLOR = (0, 0, 0)
 
 
-ACTIONS = ["GO TO THE ROCK", "PICK ROCK"]
 MAX_VEL_NORM = sqrt(2)
 
 
@@ -26,6 +30,9 @@ class Robot(pygame.sprite.Sprite):
         self.vision_field = 50
         self.communication_field = 100
         self.state = None
+        self.battery = 100
+        self.need_charge = False
+        self.t = 0
 
         self.env = env
 
@@ -69,12 +76,26 @@ class Robot(pygame.sprite.Sprite):
 
     def option(self):
         epsilon = MAX_VEL_NORM / 2
-        return_to_base, rocks_nearby, robots_nearby = self.perception()
+        return_to_base, rocks_nearby, robots_discharged_nearby = self.perception()
 
         ### Battery
+        if self.battery == 0:
+            option = "NO BATTERY"
+            heading = None
+            return option, heading
+
+        elif self.battery < 15:
+            self.need_charge = True
+            option = "RETURN TO BASE"
+            heading = return_to_base["heading"]
+            distance_to_base = return_to_base["distance"]
+            if distance_to_base < epsilon:
+                option = "CHARGE"
+                heading = None
 
         ### Return to base
-        if self.is_carrying:
+        elif self.is_carrying:
+            self.carry_rock()
             option = "RETURN TO BASE"
             heading = return_to_base["heading"]
             distance_to_base = return_to_base["distance"]
@@ -101,16 +122,28 @@ class Robot(pygame.sprite.Sprite):
         return option, heading
 
     def update(self):
+        self.battery_color()
+        self.t += 1
+        if (self.t % 20 == 0) and (self.battery > 0):
+            self.battery -= 1
+
         option, heading = self.option()
 
-        if option == "RETURN TO BASE":
+        if option == "NO BATTERY":
+            self.vel[0], self.vel[1] = 0, 0
+
+        elif option == "RETURN TO BASE":
             u = np.array([np.cos(heading), np.sin(heading)])
             self.vel = u * MAX_VEL_NORM
+
+        elif option == "CHARGE":
+            time.sleep(5)
+            self.battery = 100
+            self.need_charge = False
 
         elif option == "DROP TO BASE":
             self.vel[0], self.vel[1] = 0, 0
             self.release_rock()
-            self.change_color()
             time.sleep(1)
 
         elif option == "SEARCH ROCK":
@@ -118,6 +151,13 @@ class Robot(pygame.sprite.Sprite):
                 norm = MAX_VEL_NORM * np.random.uniform(0.3, 1)
                 heading = np.random.uniform(0, 2 * np.pi)
                 self.vel = norm * np.array([np.cos(heading), np.sin(heading)])
+            elif self.t % 100 == 0:
+                heading = atan2(self.vel[1], self.vel[0]) + np.random.uniform(
+                    -np.pi / 3, np.pi / 3
+                )
+                self.vel = np.linalg.norm(self.vel) * np.array(
+                    [np.cos(heading), np.sin(heading)]
+                )
 
         elif option == "GO TO ROCK":
             # Change vel orientation
@@ -128,7 +168,6 @@ class Robot(pygame.sprite.Sprite):
             self.vel[0], self.vel[1] = 0, 0
             rock = self.env.get_nearest_rock(self)
             self.mine_rock(rock)
-            self.change_color()
             time.sleep(1)
 
         self.pos += self.vel
@@ -145,10 +184,23 @@ class Robot(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-    def change_color(self):
-        pygame.draw.rect(
-            self.image, self.color, pygame.Rect(0, 0, self.size, self.size)
+    # def change_color(self):
+    #     # pygame.draw.rect(
+    #     #     self.image, self.color, pygame.Rect(0, 0, self.size, self.size)
+    #     # )
+    #     pass
+
+    def carry_rock(self):
+        color = robot_colors[int(self.battery)]
+        color_rgb = tuple([int(255 * x) for x in color.rgb])
+        pygame.draw.circle(
+            self.image, BLACK_COLOR, [self.size // 2, self.size // 2], self.size // 4
         )
+
+    def battery_color(self):
+        color = robot_colors[int(self.battery)]
+        color_rgb = tuple([int(255 * x) for x in color.rgb])
+        pygame.draw.rect(self.image, color_rgb, pygame.Rect(0, 0, self.size, self.size))
 
     def loop(self):
         t = threading.currentThread()

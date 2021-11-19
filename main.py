@@ -1,7 +1,7 @@
 import pygame
 import sys
-import numpy as np
 import logging
+import time
 
 from environment import Environment
 
@@ -23,7 +23,7 @@ HEIGHT = 600
 
 class Simulation:
     def __init__(self, nb_robots=20, nb_rocks=10, width=1000, height=600):
-        self.T = 10000
+        self.T = 5000
         self.width = width
         self.height = height
         self.robot_size = 10
@@ -58,14 +58,22 @@ class Simulation:
         self.container = pygame.sprite.Group()
         self.container_rocks = pygame.sprite.Group()
 
+        # initialisation des gisements de pierres
+        for rock in self.env.rocks_list:
+            self.container_rocks.add(rock)
+
+        self.container_rocks.update()
+        self.screen.fill(BACKGROUND_COLOR)
+
+        self.draw_base()
+        self.container_rocks.draw(self.screen)
+        pygame.display.flip()
+        time.sleep(2)
+
         # initialisation des robots
         for robot in self.env.robots_list:
             self.container.add(robot)
             robot.thread.start()
-
-        # initialisation des gisements de pierres
-        for rock in self.env.rocks_list:
-            self.container_rocks.add(rock)
 
         # Lancement de la simulation pour T itérations
         for i in range(self.T):
