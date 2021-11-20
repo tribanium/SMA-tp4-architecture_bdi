@@ -21,6 +21,14 @@ MAX_VEL_NORM = 1.5
 
 
 class Robot(pygame.sprite.Sprite):
+    """
+    Creates a robot instance constructed under a BDI architecture. Each robot evolves in its own thread
+    and runs a loop where he first perceives the environment, and adjusts its beliefs with the perception function.
+    This allows the robots to receive messages from near robots, and to see if a rocks deposit is nearby or if another robot needs help.
+    Then, the robot deliberates upon which action to take, following its desires with the option function.
+    Finaly, the robot updates its state with the update function where he takes an action following the option he choosed.
+    """
+
     def __init__(self, env, id, x, y, width, height):
         super().__init__()
 
@@ -37,6 +45,7 @@ class Robot(pygame.sprite.Sprite):
 
         self.env = env
 
+        # Graphical stuff
         self.color = ROBOT_COLOR
         self.image = pygame.Surface([self.size, self.size])
         self.image.fill(BACKGROUND_COLOR)
@@ -45,6 +54,7 @@ class Robot(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect()
 
+        # Initializes positiion and velocity
         self.pos = np.array([x, y], dtype=np.float64)
         norm = MAX_VEL_NORM * np.random.uniform(0.3, 1)
         heading = np.random.uniform(0, 2 * np.pi)
@@ -59,7 +69,7 @@ class Robot(pygame.sprite.Sprite):
         self.messages = queue.Queue()
 
     def mine_rock(self, rock):
-        """Mine the rock passed in argument. The thread is protected when the radius is updated."""
+        """Mine the rock passed in argument. The thread is protected when the radius of the rock deposit is updated."""
         self.lock.acquire()
         if rock is not None:
             rock.radius -= 1.5
@@ -193,7 +203,7 @@ class Robot(pygame.sprite.Sprite):
                 heading = np.random.uniform(0, 2 * np.pi)
                 self.vel = norm * np.array([np.cos(heading), np.sin(heading)])
             elif self.t % 500 == 0:
-                # Adding random movement every 100 iteration
+                # Adding random movement every 500 iteration
                 heading = atan2(self.vel[1], self.vel[0]) + np.random.uniform(
                     -np.pi / 3, np.pi / 3
                 )
@@ -229,16 +239,19 @@ class Robot(pygame.sprite.Sprite):
         self.rect.y = y
 
     def carry_rock(self):
+        """Adds a dot representing a rock when the robot returns to the base carrying a rock."""
         pygame.draw.circle(
             self.image, BLACK_COLOR, [self.size // 2, self.size // 2], self.size // 4
         )
 
     def battery_color(self):
+        """Changes the color of the robot depending on its battery."""
         color = robot_colors[int(self.battery)]
         color_rgb = tuple([int(255 * x) for x in color.rgb])
         pygame.draw.rect(self.image, color_rgb, pygame.Rect(0, 0, self.size, self.size))
 
     def dead_robot(self):
+        """Draws a black cross on the dead robot."""
         pygame.draw.line(self.image, BLACK_COLOR, (0, 0), (self.size, self.size))
         pygame.draw.line(self.image, BLACK_COLOR, (self.size, 0), (0, self.size))
 
@@ -304,6 +317,7 @@ class Robot(pygame.sprite.Sprite):
         self.env.send_message_to_robots_nearby(self, message)
 
     def loop(self):
+        """Thread function."""
         t = threading.currentThread()
         while getattr(t, "do_run", True):
             time.sleep(0.01)
