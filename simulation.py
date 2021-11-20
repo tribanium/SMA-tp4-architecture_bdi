@@ -42,7 +42,7 @@ class Simulation:
         )
 
     def start(self):
-        """Runs the simulatin of the robots on mars"""
+        """Runs the simulation of the robots on mars"""
         pygame.display.set_caption("SMA Robots on Mars")
         clock = pygame.time.Clock()
 
