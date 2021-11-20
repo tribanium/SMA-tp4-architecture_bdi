@@ -14,6 +14,12 @@ In order for each robot to carry out its objectives independently of the others,
 
 
 
+```
+![Simulation](./previews/preview.gif)
+```
+
+
+
 ## Get started
 
 Clone this repo and `cd` to it
