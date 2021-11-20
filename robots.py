@@ -15,7 +15,6 @@ robot_colors = list(red.range_to(Color("green"), 101))
 
 BACKGROUND_COLOR = (234, 213, 178)
 ROBOT_COLOR = (250, 120, 60)
-ROBOT_COLOR_CARRY = (0, 0, 255)
 BLACK_COLOR = (0, 0, 0)
 
 
@@ -29,7 +28,7 @@ class Robot(pygame.sprite.Sprite):
         self.id = id
         self.size = 10
         self.is_carrying = False
-        self.vision_field = 25
+        self.vision_field = 40
         self.communication_field = 150
 
         self.battery = 100
@@ -111,12 +110,8 @@ class Robot(pygame.sprite.Sprite):
 
         # Return to base
         elif (self.is_carrying) or (self.battery < 10):
-            if self.is_carrying:
-                self.carry_rock()
-
             if self.battery < 10:
                 self.need_charge = True
-
             option = "RETURN TO BASE"
             heading = base_data["heading"]
             distance_to_base = base_data["distance"]
@@ -129,8 +124,7 @@ class Robot(pygame.sprite.Sprite):
         elif dead_robots_nearby and (self.battery > 30):
             heading = None
             option = None
-            dead_robots_distances = [robot["distance"]
-                                     for robot in dead_robots_nearby]
+            dead_robots_distances = [robot["distance"] for robot in dead_robots_nearby]
             nearest_dead_robot = np.argmin(dead_robots_distances)
             distance = dead_robots_nearby[nearest_dead_robot]["distance"]
             heading = dead_robots_nearby[nearest_dead_robot]["heading"]
@@ -170,6 +164,8 @@ class Robot(pygame.sprite.Sprite):
         elif option == "RETURN TO BASE":
             u = np.array([np.cos(heading), np.sin(heading)])
             self.vel = u * MAX_VEL_NORM
+            if self.is_carrying:
+                self.carry_rock()
 
         elif option == "CHARGE":
             self.vel[0], self.vel[1] = 0, 0
@@ -214,9 +210,7 @@ class Robot(pygame.sprite.Sprite):
         elif option == "PICK ROCK":
             self.vel[0], self.vel[1] = 0, 0
             rock = self.env.get_nearest_rock(self)
-
             self.send_message([{"distance": 0, "heading": 0}], [])
-
             self.mine_rock(rock)
             # time.sleep(1)
 
@@ -235,31 +229,19 @@ class Robot(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-    # def change_color(self):
-    #     # pygame.draw.rect(
-    #     #     self.image, self.color, pygame.Rect(0, 0, self.size, self.size)
-    #     # )
-    #     pass
-
     def carry_rock(self):
-        color = robot_colors[int(self.battery)]
-        color_rgb = tuple([int(255 * x) for x in color.rgb])
         pygame.draw.circle(
-            self.image, BLACK_COLOR, [self.size //
-                                      2, self.size // 2], self.size // 4
+            self.image, BLACK_COLOR, [self.size // 2, self.size // 2], self.size // 4
         )
 
     def battery_color(self):
         color = robot_colors[int(self.battery)]
         color_rgb = tuple([int(255 * x) for x in color.rgb])
-        pygame.draw.rect(self.image, color_rgb,
-                         pygame.Rect(0, 0, self.size, self.size))
+        pygame.draw.rect(self.image, color_rgb, pygame.Rect(0, 0, self.size, self.size))
 
     def dead_robot(self):
-        pygame.draw.line(self.image, BLACK_COLOR,
-                         (0, 0), (self.size, self.size))
-        pygame.draw.line(self.image, BLACK_COLOR,
-                         (self.size, 0), (0, self.size))
+        pygame.draw.line(self.image, BLACK_COLOR, (0, 0), (self.size, self.size))
+        pygame.draw.line(self.image, BLACK_COLOR, (self.size, 0), (0, self.size))
 
     def process_messages(self):
         rocks_nearby = []
@@ -267,8 +249,7 @@ class Robot(pygame.sprite.Sprite):
 
         while not self.messages.empty():
             message = self.messages.get()
-            new_rocks_nearby, new_dead_robots_nearby \
-                = self.__process_message(message)
+            new_rocks_nearby, new_dead_robots_nearby = self.__process_message(message)
             rocks_nearby.extend(new_rocks_nearby)
             dead_robots_nearby.extend(new_dead_robots_nearby)
 
@@ -285,31 +266,37 @@ class Robot(pygame.sprite.Sprite):
             rock_emitter_distance = rock_dict["distance"]
             rock_emitter_heading = rock_dict["heading"]
 
-            x = rock_emitter_distance * np.cos(rock_emitter_heading) \
-                - emitter_distance * np.cos(emitter_heading)
-            y = rock_emitter_distance * np.sin(rock_emitter_heading) \
-                - emitter_distance * np.sin(emitter_heading)
+            x = rock_emitter_distance * np.cos(
+                rock_emitter_heading
+            ) - emitter_distance * np.cos(emitter_heading)
+            y = rock_emitter_distance * np.sin(
+                rock_emitter_heading
+            ) - emitter_distance * np.sin(emitter_heading)
 
-            rock_distance = sqrt(x**2 + y**2)
+            rock_distance = sqrt(x ** 2 + y ** 2)
             rock_heading = atan2(y, x)
 
-            new_rocks_nearby.append({"distance": rock_distance, "heading": rock_heading}
-                                    )
+            new_rocks_nearby.append(
+                {"distance": rock_distance, "heading": rock_heading}
+            )
 
         for robot_dict in dead_robots_near_emitter:
             dead_robot_emitter_distance = robot_dict["distance"]
             dead_robot_emitter_heading = robot_dict["heading"]
 
-            x = dead_robot_emitter_distance * np.cos(dead_robot_emitter_heading) \
-                - emitter_distance * np.cos(emitter_heading)
-            y = dead_robot_emitter_distance * np.sin(dead_robot_emitter_heading) \
-                - emitter_distance * np.sin(emitter_heading)
+            x = dead_robot_emitter_distance * np.cos(
+                dead_robot_emitter_heading
+            ) - emitter_distance * np.cos(emitter_heading)
+            y = dead_robot_emitter_distance * np.sin(
+                dead_robot_emitter_heading
+            ) - emitter_distance * np.sin(emitter_heading)
 
-            dead_robot_distance = sqrt(x**2 + y**2)
+            dead_robot_distance = sqrt(x ** 2 + y ** 2)
             dead_robot_heading = atan2(y, x)
 
-            new_dead_robots_nearby.append({"distance": dead_robot_distance, "heading": dead_robot_heading}
-                                          )
+            new_dead_robots_nearby.append(
+                {"distance": dead_robot_distance, "heading": dead_robot_heading}
+            )
 
         return new_rocks_nearby, new_dead_robots_nearby
 
@@ -323,6 +310,7 @@ class Robot(pygame.sprite.Sprite):
             time.sleep(0.01)
             return_to_base, rocks_nearby, dead_robots_nearby = self.perception()
             option, heading = self.option(
-                return_to_base, rocks_nearby, dead_robots_nearby)
+                return_to_base, rocks_nearby, dead_robots_nearby
+            )
             self.update(option, heading)
         logger.debug(f"Thread {self.id} stopped")
