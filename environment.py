@@ -54,7 +54,8 @@ class Environment:
                 for j in range(rows)
             ]
         )
-        areas = cells[np.random.choice(len(cells), replace=False, size=self.nb_rocks)]
+        areas = cells[np.random.choice(
+            len(cells), replace=False, size=self.nb_rocks)]
         x_base, y_base = areas[0]
         self.base = Basecamp(x_base, y_base)
         for pos in areas[1:]:
@@ -75,7 +76,8 @@ class Environment:
             rock_pos = rock.pos + rock.radius - robot.size / 2
             distance = sqrt(sum((robot_pos - rock_pos) ** 2))
             if distance < robot.vision_field:
-                heading = atan2(rock_pos[1] - robot_pos[1], rock_pos[0] - robot_pos[0])
+                heading = atan2(rock_pos[1] - robot_pos[1],
+                                rock_pos[0] - robot_pos[0])
                 rocks_nearby.append({"distance": distance, "heading": heading})
         return rocks_nearby
 
@@ -86,7 +88,8 @@ class Environment:
             robot_pos[0] + self.robot_size / 2,
             robot_pos[1] + self.robot_size / 2,
         )
-        bxc, byc = base_pos[0] + self.base.size / 2, base_pos[1] + self.base.size / 2
+        bxc, byc = base_pos[0] + self.base.size / \
+            2, base_pos[1] + self.base.size / 2
         distance = sqrt((bxc - rxc) ** 2 + (byc - ryc) ** 2)
         heading = atan2(byc - ryc, bxc - rxc)
         return_to_base_dict = {"distance": distance, "heading": heading}
@@ -100,8 +103,10 @@ class Environment:
             r_pos = r.pos
             distance = sqrt(sum((robot_pos - r_pos) ** 2))
             if distance < robot.communication_field:
-                heading = atan2(r_pos[1] - robot_pos[1], r_pos[0] - robot_pos[0])
-                robots_nearby.append({"distance": distance, "heading": heading})
+                heading = atan2(r_pos[1] - robot_pos[1],
+                                r_pos[0] - robot_pos[0])
+                robots_nearby.append(
+                    {"distance": distance, "heading": heading})
         return robots_nearby
 
     def send_dead_robots_nearby(self, robot):
@@ -116,8 +121,10 @@ class Environment:
             r_pos = r.pos
             distance = sqrt(sum((robot_pos - r_pos) ** 2))
             if distance < robot.vision_field:
-                heading = atan2(r_pos[1] - robot_pos[1], r_pos[0] - robot_pos[0])
-                robots_nearby.append({"distance": distance, "heading": heading})
+                heading = atan2(r_pos[1] - robot_pos[1],
+                                r_pos[0] - robot_pos[0])
+                robots_nearby.append(
+                    {"distance": distance, "heading": heading})
         return robots_nearby
 
     def delete_rocks(self, rock):
@@ -144,9 +151,18 @@ class Environment:
         distance_min = None
         nearest_robot = None
         for r in self.robots_list:
-            distance = sqrt(sum((robot.pos - r.pos) ** 2))
-            if (not distance_min) or (distance < distance_min):
-                distance_min = distance
-                nearest_robot = r
+            if r.battery == 0:
+                distance = sqrt(sum((robot.pos - r.pos) ** 2))
+
+                if not distance_min:
+                    distance_min = distance
+                    nearest_robot = r
+
+                if distance < distance_min:
+                    distance_min = distance
+                    nearest_robot = r
+
+        if nearest_robot is None:
+            return Exception("No nearest robot without battery")
 
         return nearest_robot
