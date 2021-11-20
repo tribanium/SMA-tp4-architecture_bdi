@@ -1,13 +1,9 @@
-
-from simulation import Simulation, WIDTH, HEIGHT
-
-# logging.basicConfig(
-#     filename="logs.log", filemode="w", encoding="utf-8", level=logging.DEBUG
-# )
+from simulation import Simulation
 
 
 if __name__ == "__main__":
-    # Scales up to about 100 agents
+    WIDTH = 1000
+    HEIGHT = 600
 
     nb_agents = 20
     nb_rocks = 10

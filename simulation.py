@@ -5,15 +5,7 @@ import time
 
 from environment import Environment
 
-
 BACKGROUND_COLOR = (234, 213, 178)
-ROBOT_COLOR = (250, 120, 60)
-WHITE_COLOR = (255, 255, 255)
-BLACK_COLOR = (0, 0, 0)
-GREEN_COLOR = (72, 155, 83)
-
-WIDTH = 1000
-HEIGHT = 600
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,7 +21,7 @@ class Simulation:
         self.nb_rocks = nb_rocks
         pygame.init()
         self.screen = pygame.display.set_mode(
-            (WIDTH + self.robot_size, HEIGHT + self.robot_size)
+            (self.width + self.robot_size, self.height + self.robot_size)
         )
         self.env = Environment(
             self, self.nb_robots, self.nb_rocks, self.width, self.height
