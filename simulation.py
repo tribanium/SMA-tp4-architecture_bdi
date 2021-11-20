@@ -16,12 +16,12 @@ class Simulation:
         self.T = 5000
         self.width = width
         self.height = height
-        self.robot_size = 10
+        robot_size = 10
         self.nb_robots = nb_robots
         self.nb_rocks = nb_rocks
         pygame.init()
         self.screen = pygame.display.set_mode(
-            (self.width + self.robot_size, self.height + self.robot_size)
+            (self.width + robot_size, self.height + robot_size)
         )
         self.env = Environment(
             self, self.nb_robots, self.nb_rocks, self.width, self.height
