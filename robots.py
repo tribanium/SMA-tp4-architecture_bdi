@@ -17,7 +17,7 @@ ROBOT_COLOR_CARRY = (0, 0, 255)
 BLACK_COLOR = (0, 0, 0)
 
 
-MAX_VEL_NORM = sqrt(2)
+MAX_VEL_NORM = 1.5
 
 
 class Robot(pygame.sprite.Sprite):
@@ -33,6 +33,7 @@ class Robot(pygame.sprite.Sprite):
         self.battery = 100
         self.need_charge = False
         self.t = 0
+        self.is_helped = False
 
         self.env = env
 
@@ -60,8 +61,13 @@ class Robot(pygame.sprite.Sprite):
         if rock is not None:
             rock.radius -= 1.5
             self.is_carrying = True
-            self.color = ROBOT_COLOR_CARRY
         self.lock.release()
+
+    def help_robot(self, dead_robot):
+        dead_robot.is_helped = True
+        dead_robot.battery = self.battery // 2
+        self.battery = self.battery // 2
+        dead_robot.is_helped = False
 
     def release_rock(self):
         self.is_carrying = False
@@ -71,12 +77,18 @@ class Robot(pygame.sprite.Sprite):
         return_to_base = self.env.send_return_to_base(self)  # dict
         rocks_nearby = self.env.send_rocks_nearby(self)  # list of dicts
         robots_nearby = self.env.send_robots_nearby(self)  # list of dicts
+        dead_robots = self.env.send_dead_robots_nearby(self)
 
-        return return_to_base, rocks_nearby, robots_nearby
+        return return_to_base, rocks_nearby, robots_nearby, dead_robots
 
     def option(self):
         epsilon = MAX_VEL_NORM / 2
-        return_to_base, rocks_nearby, robots_discharged_nearby = self.perception()
+        (
+            return_to_base,
+            rocks_nearby,
+            robots_discharged_nearby,
+            dead_robots,
+        ) = self.perception()
 
         ### Battery
         if self.battery == 0:
@@ -84,24 +96,32 @@ class Robot(pygame.sprite.Sprite):
             heading = None
             return option, heading
 
-        elif self.battery < 15:
-            self.need_charge = True
+        ### Return to base
+        elif (self.is_carrying) or (self.battery < 10):
+            if self.is_carrying:
+                self.carry_rock()
+            if self.battery < 10:
+                self.need_charge = True
             option = "RETURN TO BASE"
             heading = return_to_base["heading"]
             distance_to_base = return_to_base["distance"]
             if distance_to_base < epsilon:
                 option = "CHARGE"
+                if self.is_carrying:
+                    option = "DROP TO BASE"
                 heading = None
 
-        ### Return to base
-        elif self.is_carrying:
-            self.carry_rock()
-            option = "RETURN TO BASE"
-            heading = return_to_base["heading"]
-            distance_to_base = return_to_base["distance"]
-            if distance_to_base < epsilon:
-                option = "DROP TO BASE"
-                heading = None
+        elif dead_robots and (self.battery > 30):
+            heading = None
+            option = None
+            dead_robots_distances = [robot["distance"] for robot in dead_robots]
+            nearest_dead_robot = np.argmin(dead_robots_distances)
+            distance = dead_robots[nearest_dead_robot]["distance"]
+            heading = dead_robots[nearest_dead_robot]["heading"]
+            if distance < self.size:
+                option = "HELP ROBOT"
+            else:
+                option = "GO TO ROBOT"
 
         ### Is there any rock nearby ? If yes, chooses the closest
         elif rocks_nearby:
@@ -124,27 +144,38 @@ class Robot(pygame.sprite.Sprite):
     def update(self):
         self.battery_color()
         self.t += 1
-        if (self.t % 20 == 0) and (self.battery > 0):
+        if (self.t % 10 == 0) and (self.battery > 0) and (np.random.rand() > 0.7):
             self.battery -= 1
 
         option, heading = self.option()
 
         if option == "NO BATTERY":
             self.vel[0], self.vel[1] = 0, 0
+            self.dead_robot()
 
         elif option == "RETURN TO BASE":
             u = np.array([np.cos(heading), np.sin(heading)])
             self.vel = u * MAX_VEL_NORM
 
         elif option == "CHARGE":
-            time.sleep(5)
+            self.vel[0], self.vel[1] = 0, 0
             self.battery = 100
             self.need_charge = False
+            # time.sleep(5)
+
+        elif option == "GO TO ROBOT":
+            new_vel = np.array([np.cos(heading), np.sin(heading)])
+            self.vel = new_vel * MAX_VEL_NORM
+
+        elif option == "HELP ROBOT":
+            self.vel[0], self.vel[1] = 0, 0
+            dead_robot = self.env.get_nearest_robot(self)
+            self.help_robot(dead_robot)
 
         elif option == "DROP TO BASE":
             self.vel[0], self.vel[1] = 0, 0
             self.release_rock()
-            time.sleep(1)
+            # time.sleep(1)
 
         elif option == "SEARCH ROCK":
             if not self.vel.any():
@@ -152,6 +183,7 @@ class Robot(pygame.sprite.Sprite):
                 heading = np.random.uniform(0, 2 * np.pi)
                 self.vel = norm * np.array([np.cos(heading), np.sin(heading)])
             elif self.t % 100 == 0:
+                # Adding random movement every 100 iteration
                 heading = atan2(self.vel[1], self.vel[0]) + np.random.uniform(
                     -np.pi / 3, np.pi / 3
                 )
@@ -168,7 +200,7 @@ class Robot(pygame.sprite.Sprite):
             self.vel[0], self.vel[1] = 0, 0
             rock = self.env.get_nearest_rock(self)
             self.mine_rock(rock)
-            time.sleep(1)
+            # time.sleep(1)
 
         self.pos += self.vel
         x, y = self.pos
@@ -201,6 +233,10 @@ class Robot(pygame.sprite.Sprite):
         color = robot_colors[int(self.battery)]
         color_rgb = tuple([int(255 * x) for x in color.rgb])
         pygame.draw.rect(self.image, color_rgb, pygame.Rect(0, 0, self.size, self.size))
+
+    def dead_robot(self):
+        pygame.draw.line(self.image, BLACK_COLOR, (0, 0), (self.size, self.size))
+        pygame.draw.line(self.image, BLACK_COLOR, (self.size, 0), (0, self.size))
 
     def loop(self):
         t = threading.currentThread()

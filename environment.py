@@ -104,6 +104,22 @@ class Environment:
                 robots_nearby.append({"distance": distance, "heading": heading})
         return robots_nearby
 
+    def send_dead_robots_nearby(self, robot):
+        robots_nearby = []
+        robot_pos = robot.pos
+        iterator = (
+            r
+            for r in self.robots_list
+            if ((r.id != robot.id) and (r.battery == 0) and (r.is_helped == False))
+        )
+        for r in iterator:
+            r_pos = r.pos
+            distance = sqrt(sum((robot_pos - r_pos) ** 2))
+            if distance < robot.vision_field:
+                heading = atan2(r_pos[1] - robot_pos[1], r_pos[0] - robot_pos[0])
+                robots_nearby.append({"distance": distance, "heading": heading})
+        return robots_nearby
+
     def delete_rocks(self, rock):
         self.simu.container_rocks.remove(rock)
         self.rocks_list.remove(rock)
@@ -122,3 +138,15 @@ class Environment:
                 nearest_rock = rock
 
         return nearest_rock
+
+    def get_nearest_robot(self, robot):
+        # Get the dead_robot near the robot
+        distance_min = None
+        nearest_robot = None
+        for r in self.robots_list:
+            distance = sqrt(sum((robot.pos - r.pos) ** 2))
+            if (not distance_min) or (distance < distance_min):
+                distance_min = distance
+                nearest_robot = r
+
+        return nearest_robot

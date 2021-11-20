@@ -45,12 +45,11 @@ class Simulation:
         base = self.env.base
         pygame.draw.rect(
             self.screen,
-            GREEN_COLOR,
+            self.env.base.color,
             pygame.Rect(base.x, base.y, base.size, base.size),
         )
 
     def start(self):
-
         pygame.display.set_caption("SMA Robots on Mars")
         clock = pygame.time.Clock()
 
