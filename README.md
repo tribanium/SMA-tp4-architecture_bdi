@@ -14,9 +14,7 @@ In order for each robot to carry out its objectives independently of the others,
 
 
 
-```
-![Simulation](./previews/preview.gif)
-```
+![preview](./previews/preview.gif)
 
 
 
