@@ -6,3 +6,6 @@ leg/
 *.log
 .vscode/
 images/
+
+# Don't ignore that
+!FlagelEtourneau_TPJade - RAPPORT.pdf
